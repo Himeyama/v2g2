@@ -106,3 +106,21 @@ def test_response_to_dict_includes_function_call():
 
     fc = result["candidates"][0]["content"]["parts"][0]["functionCall"]
     assert fc == {"name": "get_weather", "args": {"city": "Tokyo"}}
+
+
+def test_response_to_dict_includes_cached_token_count():
+    meta = MagicMock()
+    meta.prompt_token_count = 100
+    meta.candidates_token_count = 20
+    meta.total_token_count = 120
+    meta.cached_content_token_count = 80
+    meta.thoughts_token_count = None
+    response = MagicMock()
+    response.candidates = []
+    response.usage_metadata = meta
+
+    usage = vertex.response_to_dict(response)["usageMetadata"]
+
+    assert usage["promptTokenCount"] == 100
+    assert usage["cachedContentTokenCount"] == 80
+    assert "thoughtsTokenCount" not in usage

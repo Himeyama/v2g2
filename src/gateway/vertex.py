@@ -137,11 +137,16 @@ def response_to_dict(response: types.GenerateContentResponse) -> dict[str, Any]:
 
     if response.usage_metadata:
         meta = response.usage_metadata
-        result["usageMetadata"] = {
+        usage: dict[str, Any] = {
             "promptTokenCount": meta.prompt_token_count,
             "candidatesTokenCount": meta.candidates_token_count,
             "totalTokenCount": meta.total_token_count,
         }
+        if meta.cached_content_token_count is not None:
+            usage["cachedContentTokenCount"] = meta.cached_content_token_count
+        if meta.thoughts_token_count is not None:
+            usage["thoughtsTokenCount"] = meta.thoughts_token_count
+        result["usageMetadata"] = usage
 
     return result
 
