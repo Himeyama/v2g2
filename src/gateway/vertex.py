@@ -99,6 +99,8 @@ def build_config(request_body: dict[str, Any]) -> types.GenerateContentConfig | 
         config_dict["tool_config"] = request_body["toolConfig"]
     if "systemInstruction" in request_body:
         config_dict["system_instruction"] = request_body["systemInstruction"]
+    if "cachedContent" in request_body:
+        config_dict["cached_content"] = request_body["cachedContent"]
     return types.GenerateContentConfig(**config_dict) if config_dict else None
 
 
