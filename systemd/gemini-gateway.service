@@ -1,0 +1,33 @@
+[Unit]
+Description=Gemini API Compatible Gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=gemini
+Group=gemini
+
+WorkingDirectory=/opt/gemini-gateway
+ExecStart=/opt/gemini-gateway/.venv/bin/uvicorn gateway.main:app \
+    --host 0.0.0.0 \
+    --port 12080 \
+    --timeout-keep-alive 300
+
+EnvironmentFile=/etc/gemini-gateway/env
+
+Restart=on-failure
+RestartSec=5
+
+# Resource limits
+MemoryMax=512M
+TimeoutStartSec=30
+TimeoutStopSec=30
+
+# Logging goes to stdout → journald
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gemini-gateway
+
+[Install]
+WantedBy=multi-user.target
