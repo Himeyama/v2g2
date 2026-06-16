@@ -31,8 +31,10 @@ def _fake_chunk(text: str):
 
 
 async def _fake_stream(*args, **kwargs):
-    for text in ["Hello", " World"]:
-        yield _fake_chunk(text)
+    async def _gen():
+        for text in ["Hello", " World"]:
+            yield _fake_chunk(text)
+    return _gen()
 
 
 def test_stream_generate_content(client):

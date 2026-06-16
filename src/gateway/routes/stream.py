@@ -43,6 +43,7 @@ async def _sse_generator(
     except Exception as exc:
         logger.error("Vertex AI stream failed mid-stream for model=%s: %s", model, exc, exc_info=True)
         raise
+    yield "data: [DONE]\n\n"
 
 
 @router.post("/models/{model}:streamGenerateContent")
