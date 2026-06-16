@@ -151,6 +151,108 @@ def response_to_dict(response: types.GenerateContentResponse) -> dict[str, Any]:
     return result
 
 
+def build_cache_config(request_body: dict[str, Any]) -> types.CreateCachedContentConfig:
+    config_dict: dict[str, Any] = {}
+    if "contents" in request_body:
+        config_dict["contents"] = build_contents(request_body["contents"])
+    if "systemInstruction" in request_body:
+        config_dict["system_instruction"] = request_body["systemInstruction"]
+    if "tools" in request_body:
+        tools = request_body["tools"]
+        tools = tools if isinstance(tools, list) else [tools]
+        config_dict["tools"] = _sanitize_tools(tools)
+    if "toolConfig" in request_body:
+        config_dict["tool_config"] = request_body["toolConfig"]
+    if "ttl" in request_body:
+        config_dict["ttl"] = request_body["ttl"]
+    if "expireTime" in request_body:
+        config_dict["expire_time"] = request_body["expireTime"]
+    if "displayName" in request_body:
+        config_dict["display_name"] = request_body["displayName"]
+    return types.CreateCachedContentConfig(**config_dict)
+
+
+def _format_time(value: Any) -> Any:
+    return value.isoformat() if hasattr(value, "isoformat") else value
+
+
+def cached_content_to_dict(cc: types.CachedContent) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    if cc.name is not None:
+        result["name"] = cc.name
+    if cc.model is not None:
+        result["model"] = cc.model
+    if cc.display_name is not None:
+        result["displayName"] = cc.display_name
+    if cc.create_time is not None:
+        result["createTime"] = _format_time(cc.create_time)
+    if cc.update_time is not None:
+        result["updateTime"] = _format_time(cc.update_time)
+    if cc.expire_time is not None:
+        result["expireTime"] = _format_time(cc.expire_time)
+    if cc.usage_metadata is not None:
+        result["usageMetadata"] = {
+            "totalTokenCount": cc.usage_metadata.total_token_count,
+        }
+    return result
+
+
+async def create_cache(
+    client: genai.Client,
+    request_body: dict[str, Any],
+) -> dict[str, Any]:
+    model = request_body["model"]
+    config = build_cache_config(request_body)
+    cc = await client.aio.caches.create(model=model, config=config)
+    return cached_content_to_dict(cc)
+
+
+async def get_cache(client: genai.Client, name: str) -> dict[str, Any]:
+    cc = await client.aio.caches.get(name=name)
+    return cached_content_to_dict(cc)
+
+
+async def list_caches(
+    client: genai.Client,
+    page_size: int | None = None,
+    page_token: str | None = None,
+) -> dict[str, Any]:
+    config_dict: dict[str, Any] = {}
+    if page_size is not None:
+        config_dict["page_size"] = page_size
+    if page_token is not None:
+        config_dict["page_token"] = page_token
+    pager = await client.aio.caches.list(config=config_dict or None)
+
+    result: dict[str, Any] = {
+        "cachedContents": [cached_content_to_dict(cc) for cc in pager.page],
+    }
+    next_token = pager.config.get("page_token")
+    if next_token:
+        result["nextPageToken"] = next_token
+    return result
+
+
+async def update_cache(
+    client: genai.Client,
+    name: str,
+    request_body: dict[str, Any],
+) -> dict[str, Any]:
+    config_dict: dict[str, Any] = {}
+    if "ttl" in request_body:
+        config_dict["ttl"] = request_body["ttl"]
+    if "expireTime" in request_body:
+        config_dict["expire_time"] = request_body["expireTime"]
+    config = types.UpdateCachedContentConfig(**config_dict)
+    cc = await client.aio.caches.update(name=name, config=config)
+    return cached_content_to_dict(cc)
+
+
+async def delete_cache(client: genai.Client, name: str) -> dict[str, Any]:
+    await client.aio.caches.delete(name=name)
+    return {}
+
+
 async def generate(
     client: genai.Client,
     model: str,

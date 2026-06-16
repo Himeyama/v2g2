@@ -7,6 +7,7 @@ import uvicorn
 from fastapi import FastAPI, Request, Response
 
 from .config import load_config
+from .routes.cache import router as cache_router
 from .routes.generate import router as generate_router
 from .routes.models import router as models_router
 from .routes.stream import router as stream_router
@@ -25,6 +26,7 @@ app = FastAPI(title="Gemini Gateway", lifespan=lifespan)
 app.include_router(models_router, prefix="/v1beta")
 app.include_router(generate_router, prefix="/v1beta")
 app.include_router(stream_router, prefix="/v1beta")
+app.include_router(cache_router, prefix="/v1beta")
 
 
 @app.middleware("http")
