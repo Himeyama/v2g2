@@ -29,6 +29,23 @@ def _client_error_to_http(exc: ClientError, model: str) -> HTTPException:
     )
 
 
+def _value_error_to_http(exc: ValueError, model: str) -> HTTPException:
+    # genai validates the request locally and raises ValueError for malformed
+    # input (e.g. "contents are required."). Report it as 400 INVALID_ARGUMENT
+    # rather than letting it surface as an internal 500.
+    logger.warning("Invalid stream request for model=%s: %s", model, exc)
+    return HTTPException(
+        status_code=400,
+        detail={
+            "error": {
+                "code": 400,
+                "message": f"Vertex AI request failed: {exc}",
+                "status": "INVALID_ARGUMENT",
+            }
+        },
+    )
+
+
 async def _sse_generator(
     first_chunk: dict[str, Any],
     gen: AsyncGenerator[dict[str, Any], None],
@@ -40,6 +57,8 @@ async def _sse_generator(
             yield f"data: {json.dumps(chunk)}\n\n"
     except ClientError as exc:
         raise _client_error_to_http(exc, model)
+    except ValueError as exc:
+        raise _value_error_to_http(exc, model)
     except Exception as exc:
         logger.error("Vertex AI stream failed mid-stream for model=%s: %s", model, exc, exc_info=True)
         raise
@@ -59,6 +78,8 @@ async def stream_generate_content(model: str, request: Request):
         return StreamingResponse(iter([]), media_type="text/event-stream")
     except ClientError as exc:
         raise _client_error_to_http(exc, model) from exc
+    except ValueError as exc:
+        raise _value_error_to_http(exc, model) from exc
     except Exception as exc:
         logger.error("Vertex AI stream failed for model=%s: %s", model, exc, exc_info=True)
         raise HTTPException(

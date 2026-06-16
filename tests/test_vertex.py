@@ -25,6 +25,22 @@ def test_build_contents_function_call_roundtrip():
     assert contents[2].parts[0].function_response.response == {"temp": 22}
 
 
+def test_build_contents_defaults_missing_role_to_user():
+    # Vertex AI requires a role; the Gemini Developer API defaults a missing
+    # role to "user". The gateway must mirror that default.
+    contents = vertex.build_contents([{"parts": [{"text": "Hello"}]}])
+
+    assert contents[0].role == "user"
+
+
+def test_build_contents_preserves_explicit_role():
+    contents = vertex.build_contents(
+        [{"role": "model", "parts": [{"text": "Hi there!"}]}]
+    )
+
+    assert contents[0].role == "model"
+
+
 def test_build_config_passes_tools():
     request_body = {
         "tools": [{"functionDeclarations": [{"name": "get_weather"}]}],

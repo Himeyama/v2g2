@@ -33,6 +33,21 @@ async def generate_content(model: str, request: Request):
                 }
             },
         ) from exc
+    except ValueError as exc:
+        # genai validates the request locally and raises ValueError for
+        # malformed input (e.g. "contents are required."). That is a client
+        # error, not an internal failure, so report it as 400 INVALID_ARGUMENT.
+        logger.warning("Invalid request for model=%s: %s", model, exc)
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": {
+                    "code": 400,
+                    "message": f"Vertex AI request failed: {exc}",
+                    "status": "INVALID_ARGUMENT",
+                }
+            },
+        ) from exc
     except Exception as exc:
         logger.error("Vertex AI request failed for model=%s: %s", model, exc, exc_info=True)
         raise HTTPException(

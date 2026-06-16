@@ -21,6 +21,11 @@ def _handle_error(exc: Exception, op: str):
     if isinstance(exc, ClientError):
         status_code = exc.code if hasattr(exc, "code") else 500
         status = exc.status if hasattr(exc, "status") else "INTERNAL"
+    elif isinstance(exc, ValueError):
+        # genai raises ValueError for malformed input validated locally; that
+        # is a client error, not an internal failure.
+        status_code = 400
+        status = "INVALID_ARGUMENT"
     else:
         status_code = 500
         status = "INTERNAL"

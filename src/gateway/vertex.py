@@ -31,9 +31,11 @@ def build_contents(raw_contents: list[dict[str, Any]]) -> list[types.Content]:
                         )
                     )
                 )
-        content = types.Content(parts=parts)
-        if "role" in c:
-            content.role = c["role"]
+        # The Gemini Developer API treats ``role`` as optional and defaults a
+        # missing role to "user"; Vertex AI rejects content without a valid
+        # role ("Please use a valid role: user, model."). Mirror the Developer
+        # API default so single-turn requests that omit the role still work.
+        content = types.Content(parts=parts, role=c.get("role", "user"))
         result.append(content)
     return result
 
