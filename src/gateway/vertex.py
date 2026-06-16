@@ -153,6 +153,57 @@ def response_to_dict(response: types.GenerateContentResponse) -> dict[str, Any]:
     return result
 
 
+def model_to_dict(model: types.Model) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    if model.name is not None:
+        # Vertex returns paths like "publishers/google/models/gemini-2.0-flash";
+        # the Gemini Developer API exposes them as "models/<id>".
+        model_id = model.name.rsplit("/", 1)[-1]
+        result["name"] = f"models/{model_id}"
+    if model.version is not None:
+        result["version"] = model.version
+    if model.display_name is not None:
+        result["displayName"] = model.display_name
+    if model.description is not None:
+        result["description"] = model.description
+    if model.input_token_limit is not None:
+        result["inputTokenLimit"] = model.input_token_limit
+    if model.output_token_limit is not None:
+        result["outputTokenLimit"] = model.output_token_limit
+    if model.supported_actions is not None:
+        result["supportedGenerationMethods"] = model.supported_actions
+    if model.temperature is not None:
+        result["temperature"] = model.temperature
+    if model.max_temperature is not None:
+        result["maxTemperature"] = model.max_temperature
+    if model.top_p is not None:
+        result["topP"] = model.top_p
+    if model.top_k is not None:
+        result["topK"] = model.top_k
+    return result
+
+
+async def list_models(
+    client: genai.Client,
+    page_size: int | None = None,
+    page_token: str | None = None,
+) -> dict[str, Any]:
+    config_dict: dict[str, Any] = {}
+    if page_size is not None:
+        config_dict["page_size"] = page_size
+    if page_token is not None:
+        config_dict["page_token"] = page_token
+    pager = await client.aio.models.list(config=config_dict or None)
+
+    result: dict[str, Any] = {
+        "models": [model_to_dict(m) for m in pager.page],
+    }
+    next_token = pager.config.get("page_token")
+    if next_token:
+        result["nextPageToken"] = next_token
+    return result
+
+
 def build_cache_config(request_body: dict[str, Any]) -> types.CreateCachedContentConfig:
     config_dict: dict[str, Any] = {}
     if "contents" in request_body:
