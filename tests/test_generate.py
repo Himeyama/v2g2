@@ -17,6 +17,9 @@ def client():
 def _fake_response():
     part = MagicMock()
     part.text = "Hello!"
+    part.function_call = None
+    part.function_response = None
+    part.thought = None
     content = MagicMock()
     content.role = "model"
     content.parts = [part]

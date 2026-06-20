@@ -18,6 +18,9 @@ def client():
 def _fake_chunk(text: str):
     part = MagicMock()
     part.text = text
+    part.function_call = None
+    part.function_response = None
+    part.thought = None
     content = MagicMock()
     content.role = "model"
     content.parts = [part]

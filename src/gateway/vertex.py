@@ -112,9 +112,7 @@ def response_to_dict(response: types.GenerateContentResponse) -> dict[str, Any]:
         parts = []
         if cand.content and cand.content.parts:
             for part in cand.content.parts:
-                if part.text is not None:
-                    parts.append({"text": part.text})
-                elif part.function_call is not None:
+                if part.function_call is not None:
                     fc = part.function_call
                     parts.append(
                         {
@@ -124,6 +122,21 @@ def response_to_dict(response: types.GenerateContentResponse) -> dict[str, Any]:
                             }
                         }
                     )
+                elif part.function_response is not None:
+                    fr = part.function_response
+                    parts.append(
+                        {
+                            "functionResponse": {
+                                "name": fr.name,
+                                "response": fr.response,
+                            }
+                        }
+                    )
+                elif part.text:
+                    text_part: dict[str, Any] = {"text": part.text}
+                    if part.thought:
+                        text_part["thought"] = True
+                    parts.append(text_part)
         finish_reason = None
         if cand.finish_reason is not None:
             finish_reason = cand.finish_reason.name if hasattr(cand.finish_reason, "name") else str(cand.finish_reason)
